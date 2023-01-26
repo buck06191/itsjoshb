@@ -1,17 +1,16 @@
 ---
 // Welcome to Astro! Everything between these triple-dash code fences
-// is your "component front matter". It never runs in the browser.
-console.log('This runs in your terminal, not the browser!');
+
+import BlogLayout from '../layouts/BlogLayout.astro';
+import PageLayout from '../layouts/PageLayout.astro';
 ---
 
-<html>
-  <body>
-    <h1>Hello, World!</h1>
-    <a rel='me' href='https://hachyderm.io/@theyorkshirebeard'
-      >@theyorkshirebeard@hachyderm.io</a
-    >
-  </body>
-</html>
+<PageLayout title={'itsjoshb'} includeHeader={false}>
+  <section>
+    <BlogLayout count={3} />
+    <a href='/blog' class='underline decoration-2'>See more posts</a>
+  </section>
+</PageLayout>
 <style>
   h1 {
     color: orange;

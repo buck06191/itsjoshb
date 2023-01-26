@@ -1,0 +1,61 @@
+---
+import PageLayout from 'layout:PageLayout.astro';
+
+import { Item, CATEGORY, Category } from 'type:Category';
+
+const data: Item[] = [
+  {
+    name: 'Teach Yourself Computer Science',
+    url: 'https://teachyourselfcs.com/',
+    category: CATEGORY.COMPUTER_SCIENCE,
+    addDate: new Date('2023-01-22')
+  }
+];
+
+const categoryToClass = (category: Category) => {
+  return category.toLocaleLowerCase().split(' ').join('_');
+};
+---
+
+<PageLayout title={'Interesting Stuff'}>
+  <header class='mb-6'>
+    <h2 class='mb-4 text-2xl'>Interesting Stuff</h2>
+    <p>
+      Here's a list of a few things I find interesting, both technical and
+      non-technical. I'll update this semi-regularly.
+    </p>
+  </header>
+  <ul class='list-none'>
+    {
+      data.map(({ name, url, category, addDate }) => (
+        <a href={url}>
+          <li class='border-2 border-black px-2 hover:shadow-2xl'>
+            <header class='flex sm:flex-row flex-col sm:justify-between'>
+              <h3 class='text-base my-2 leading-5'>{`${name}`} </h3>
+              <p class='text-sm leading-5 sm:mr-6'>{`${url}`} </p>
+            </header>
+
+            <p class='flex flex-row justify-between'>
+              <span
+                class={`inline-block py-0.5 px-1 text-sm ${categoryToClass(
+                  category
+                )}`}
+              >
+                {category}
+              </span>
+              <small class='sm:mr-6'>
+                Added {addDate.toLocaleDateString()}
+              </small>
+            </p>
+          </li>
+        </a>
+      ))
+    }
+  </ul>
+</PageLayout>
+
+<style lang='scss'>
+  .computer_science {
+    background: plum;
+  }
+</style>

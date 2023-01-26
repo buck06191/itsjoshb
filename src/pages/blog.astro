@@ -1,0 +1,9 @@
+---
+import BlogLayout from '../layouts/BlogLayout.astro';
+import PageLayout from '../layouts/PageLayout.astro';
+---
+
+<PageLayout title={'Blog Posts'}>
+  <h2 class='text-2xl mb-5'>Blog posts</h2>
+  <BlogLayout count={10} />
+</PageLayout>

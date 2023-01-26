@@ -1,0 +1,26 @@
+---
+import MastodonIcon from 'component:icons/Mastodon.astro';
+import GithubIcon from 'component:icons/Github.astro';
+
+const today = new Date();
+---
+
+<footer class='flex flex-col justify-center'>
+  <!-- Social content -->
+
+  <ul class='flex h-7 gap-8 items-stretch justify-center'>
+    <li>
+      <a rel='me' href='https://hachyderm.io/@theyorkshirebeard' class='h-full'>
+        <MastodonIcon />
+      </a>
+    </li>
+    <li>
+      <a rel='me' href='https://github.com/buck06191' class='h-full'>
+        <GithubIcon />
+      </a>
+    </li>
+  </ul>
+  <small class='text-center pt-1'
+    >&copy; {today.getFullYear()} Josh Buckland. All rights reserved.</small
+  >
+</footer>
