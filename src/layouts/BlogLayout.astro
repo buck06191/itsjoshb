@@ -1,0 +1,49 @@
+---
+import Card from '../components/Card.astro';
+
+interface Props {
+  count: number;
+}
+
+const { count } = Astro.props;
+const posts = await Astro.glob('../pages/post/**/*.mdx');
+
+const selectedPosts = posts.slice(0, count);
+---
+
+<ul class='blog_list'>
+  {
+    selectedPosts.map((post) => (
+      <li class='blog_card'>
+        <Card
+          url={'/post/' + post.frontmatter.slug}
+          title={post.frontmatter.title}
+          tags={post.frontmatter.tags}
+        >
+          {post.frontmatter.description}
+        </Card>
+      </li>
+    ))
+  }
+</ul>
+<style lang='scss'>
+  .blog_list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+
+    list-style-type: none;
+    padding-left: 0;
+  }
+
+  .blog_card {
+    margin-bottom: 2rem;
+    width: 100%;
+  }
+
+  .container {
+    width: 100%;
+    margin: auto;
+  }
+</style>

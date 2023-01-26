@@ -1,0 +1,43 @@
+---
+interface Props {
+  url?: string;
+  title?: string;
+  tags?: Array<string>;
+}
+const { url = '#', title = 'Default title', tags = [] } = Astro.props;
+---
+
+<article
+  class='group flex flex-col border-black border h-full w-full pb-4 relative overflow-hidden hover:shadow-2xl focus-within:shadow-2xl'
+>
+  <section class='flex flex-col flex-grow justify-start pl-4 last:mt-auto'>
+    <h3 class='text-xl'>
+      <a
+        href={url}
+        class="no-underline focus:underline after:absolute after:inset-0 after:content-[''] group-focus-within:focus:no-underline group-focus-within:focus:shadow-none group-focus-within:focus:outline-none"
+        >{title}</a
+      >
+    </h3>
+    <p class='card__excerpt'>
+      <slot>Default description.</slot>
+    </p>
+    <small class='flex'>
+      {
+        tags.map((tag) => (
+          <small class='mr-2 bg-blue-700 text-white p-1'>{tag}</small>
+        ))
+      }
+    </small>
+  </section>
+</article>
+
+<style is:global>
+  .card:focus-within a:focus {
+    text-decoration: none;
+    box-shadow: none;
+    outline: none;
+  }
+  .card__content:last-child {
+    margin-top: auto;
+  }
+</style>
