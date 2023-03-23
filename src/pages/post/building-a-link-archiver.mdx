@@ -1,0 +1,39 @@
+---
+layout: ../../layouts/PostLayout.astro
+title: "Building a link archiver - Part 1"
+description: "I regularly find articles and content that I want to archive and share, so let's build an archiver using serverless architecture."
+tags: ["serverless", "terraform", "rust"]
+slug: building-a-link-archiver-part-1
+pubDate: "10th Feb 2023"
+draft: true
+---
+
+- Service requirements
+  - Accessible via an API
+  - Easy to update
+- Architecture description
+  - Using terraform to build the architecture
+  - What is needed for the database item
+    - Choice to use sort key of URL and hash key of category
+  - Setting up and deplying the infrastructure a bit at a time
+- Writing the lambda
+  - Creating a test event to make it easier to do interactive testing.
+  - Local dynamoDB for testing
+  - Can't get localstack profile to work when running locally
+- Deploying a Rust lambda
+  - Compiling to correct target using an Apple Silicon machine
+  - Trying to use the musl docker container
+  - Zig build approach
+  - cargo lambda (which includes zig build and makes it easy to test and target)
+- Terraform
+  - issues with getting the zip file to work in terraform cloud.
+  - Looks like it's because the file is generated during `plan` and then isn't available in CI during the `apply` stage
+  - Work around from <https://github.com/hashicorp/terraform-provider-archive/issues/39#issuecomment-815021702> using random string
+
+TODO:
+
+- Get rid of any env variables that we don't want public
+- Write up building out the lambda locally
+- Deploy infrastructure a bit at a time.
+- Deploy the lambda as the final step of the infrastructure
+- Test and debug
