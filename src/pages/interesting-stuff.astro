@@ -9,6 +9,18 @@ const data: Item[] = [
     url: 'https://teachyourselfcs.com/',
     category: CATEGORY.COMPUTER_SCIENCE,
     addDate: new Date('2023-01-22')
+  },
+  {
+    name: 'Sad Servers',
+    url: 'https://sadservers.com/',
+    category: CATEGORY.COMPUTER_SCIENCE,
+    addDate: new Date('2024-01-25')
+  },
+  {
+    name: 'Game Programming Patterns',
+    url: 'https://gameprogrammingpatterns.com',
+    category: CATEGORY.GAME_DEVELOPMENT,
+    addDate: new Date('2024-01-25')
   }
 ];
 
@@ -29,7 +41,7 @@ const categoryToClass = (category: Category) => {
     {
       data.map(({ name, url, category, addDate }) => (
         <a href={url}>
-          <li class='border-2 border-black px-2 hover:shadow-2xl'>
+          <li class='border-2 border-black px-2 my-2.5 hover:shadow-2xl'>
             <header class='flex sm:flex-row flex-col sm:justify-between'>
               <h3 class='text-base my-2 leading-5'>{`${name}`} </h3>
               <p class='text-sm leading-5 sm:mr-6'>{`${url}`} </p>
@@ -57,5 +69,9 @@ const categoryToClass = (category: Category) => {
 <style lang='scss'>
   .computer_science {
     background: plum;
+  }
+
+  .game_dev {
+    background: lightcoral;
   }
 </style>
