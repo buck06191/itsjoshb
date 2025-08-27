@@ -1,42 +1,41 @@
-  h1,
-  h2,
-  h3,
-  h4 {
-    margin: 1rem 0;
-  }
+h1,
+h2,
+h3,
+h4 {
+  margin: 1rem 0;
+}
 
-  h2 {
-    font-size: 1.25rem; /* 20px */
-    line-height: 1.75rem; /* 28px */
-  }
+h2 {
+  font-size: 1.25rem; /* 20px */
+  line-height: 1.75rem; /* 28px */
+}
 
-  h3 {
-    font-size: 1.125rem; /* 18px */
-    line-height: 1.75rem; /* 28px */
-  }
+h3 {
+  font-size: 1.125rem; /* 18px */
+  line-height: 1.75rem; /* 28px */
+}
 
-  p {
-    margin: 0.5rem 0;
-  }
+p {
+  margin: 0.5rem 0;
+}
 
-  blockquote {
-    background: #f9f9f9;
-    padding: 0.5rem 0.75rem;
-    quotes: '\201C''\201D''\2018''\2019';
-  }
+blockquote {
+  background: #f9f9f9;
+  padding: 0.5rem 0.75rem;
+  quotes: '\201C' '\201D' '\2018' '\2019';
+}
 
-  blockquote:before {
-    color: #ccc;
-    content: open-quote;
-    font-size: 4rem;
-    line-height: 0.1rem;
-    vertical-align: -1.75rem;
-  }
+blockquote:before {
+  color: #ccc;
+  content: open-quote;
+  font-size: 4rem;
+  line-height: 0.1rem;
+  vertical-align: -1.75rem;
+}
 
-  blockquote p {
-    display: inline;
-  }
-
+blockquote p {
+  display: inline;
+}
 
 a {
   color: #222;
@@ -72,7 +71,6 @@ blockquote {
   font-style: italic;
 }
 
-
 .social-icon {
   aspect-ratio: 1/1;
   height: 100%;
@@ -82,6 +80,5 @@ blockquote {
     .outer {
       fill: red;
     }
-
   }
 }

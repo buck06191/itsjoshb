@@ -1,7 +1,8 @@
 ---
 layout: ../layouts/PageLayout.astro
-title: "About Me"
+title: 'About Me'
 ---
+
 ## Hi there 👋
 
 ### `tl;dr`
@@ -9,7 +10,7 @@ title: "About Me"
 - 😄 Pronouns: he/him
 - 🌱 I’m currently learning: Go, Rust
 - 🤔 I’m looking for help with: Transferrable design skills - what's
-the best way to solve "this" problem and why?
+  the best way to solve "this" problem and why?
 - 💬 Ask me about: mentoring
 
 ### `whoami`

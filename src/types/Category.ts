@@ -1,6 +1,7 @@
 export const CATEGORY = {
   COMPUTER_SCIENCE: 'Computer Science',
-  GAME_DEVELOPMENT: 'Game Dev'
+  GAME_DEVELOPMENT: 'Game Dev',
+  CYBERSECURITY: 'Cybersecurity'
 } as const;
 
 export type Category = (typeof CATEGORY)[keyof typeof CATEGORY];
