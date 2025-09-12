@@ -5,16 +5,20 @@ description: A write-up of the Martina - White Wolf CTF challenge from "The Futu
 tags: ['ctf', 'cybersecurity', 'tficomic']
 slug: martina-white-wolf
 pubDate: '12th september, 2025'
-image: 
+image:
 ---
 
+import { Image } from "astro:assets";
+import errorMessage from '../../images/white-wolf/buffer-seg-fault-error.png'
+import pwndbg from '../../images/white-wolf/pwndbg.png';
+ 
 # White Wolf
 
 ## Introduction
 
-Recently I subscribed to the new "The Future Is ******" comics and started digging through the different CTFs hidden throughout the issues. I did the first issue and the kickstarter challenges without making note of much of what I did, but issue 2 (Martina) had some much more complex and in depth problems to solve and I'm more likely to learn if I write it down and share that information, so here we go!
+Recently I subscribed to the new "The Future Is **\*\***" comics and started digging through the different CTFs hidden throughout the issues. I did the first issue and the kickstarter challenges without making note of much of what I did, but issue 2 (Martina) had some much more complex and in depth problems to solve and I'm more likely to learn if I write it down and share that information, so here we go!
 
-This was my first ever buffer overflow challenge so there was a lot of learning here and probably a lot of dead ends I've forgotten to write down. What I'm trying to say is - this one was not easy if you didn't know what you were doing! There's a lot of moving pieces and a lot of places this could go wrong. 
+This was my first ever buffer overflow challenge so there was a lot of learning here and probably a lot of dead ends I've forgotten to write down. What I'm trying to say is - this one was not easy if you didn't know what you were doing! There's a lot of moving pieces and a lot of places this could go wrong.
 My final solution was very much a case of standing on the shoulders of giants. If you find that you're getting stuck, take some time to dig more into the tools you're using and the underlying theory. It will make it _a lot_ easier.
 
 ## Where do we start?
@@ -38,12 +42,16 @@ Okay, I'm going to cheat here and not actually write out what one is. There's tw
 
 I recommend you go give these a read and then come back here, but I'll also try keep what I say fairly self-contained if you're not prone to pursuing "Further Reading"
 
-- <https://lightfootlabs.io/blog/buffer-overflows-through-visuals>
-- <https://medium.com/@sigkilla9/linux-buffer-overflows-46833345382b>
+- [https://lightfootlabs.io/blog/buffer-overflows-through-visuals](https://lightfootlabs.io/blog/buffer-overflows-through-visuals)
+- [https://medium.com/@sigkilla9/linux-buffer-overflows-46833345382b](https://medium.com/@sigkilla9/linux-buffer-overflows-46833345382b)
 
 Okay, so what we basically need to know is that the program we're running is asking for some input and is storing it in a variable where it's set aside some memory (the buffer) to store whatever we give it. If the code isn't careful enough and we're nasty enough, we can provide the right kind of input to actually overflow that space and creep into other memory. This gives an error when we run the code:
 
-![Output from running `penance-rig`. The command line interface takes input, into which the letter A has been entered dozens of times. The program then says that the user is not authorised to perform that function before then s howing a `segmentation fault` error.](../../images/white-wolf/buffer-seg-fault-error.png)
+<Image
+  src={errorMessage}
+  alt='Output from running `penance-rig`. The command line interface takes input, into which the letter A has been entered dozens of times. The program then says that the user is not authorised to perform that function before then showing a `segmentation fault` error.'
+/>
+"
 
 Digging through the above blog posts tells us that the way to exploit this is to find out the exact point at which the overflow starts and to then instead write the memory location of what we want to run/extract instead. There's more to it than this, and I'll get on to some of it as we go on, but that covers the general idea.
 
@@ -78,11 +86,14 @@ python -c "print('A' * 72 + '\x00\x24\x49\x80')" | ./penance-rig # where we twea
 
 BUT THIS DID NOT WORK. I was clearly misunderstanding how the address needed to be converted. I noticed that Lightfoot Labs suggested using `pwntools` to avoid doing these swaps by hand and at this point I was willing to spend the time getting it set up. Spoiler: This was the best decision I could have made.
 
-Whilst I'm very comfortable with downloading and setting up python virtualenvs and packages, I was less certain on how to use this set of tools to actually do what I needed to do. I did some digging to find a nice guide on using `pwntools` to actually do some buffer overflow exploits and found a really nice blog post that actually focussed on CTF competitions - <https://www.archcloudlabs.com/projects/pwntools-bof/>. This was the turning point in everything.
+Whilst I'm very comfortable with downloading and setting up python virtualenvs and packages, I was less certain on how to use this set of tools to actually do what I needed to do. I did some digging to find a nice guide on using `pwntools` to actually do some buffer overflow exploits and found a really nice blog post that actually focussed on CTF competitions - [https://www.archcloudlabs.com/projects/pwntools-bof](https://www.archcloudlabs.com/projects/pwntools-bof). This was the turning point in everything.
 
 Reading through the article one of the first things I noted was that they used a tool called `pwndbg` to make it easier to debug a binary for CTF competitions/exploits. Downloading this and doing some digging around gave me the following:
 
-![An image of the `pwndbg` interface. It shows a terminal screen and output from the tool. The commands run are cyclic, which provides a set of letters to use as input, and run, which runs the penance-rig binary. The output tells us that we hit the EIP register with the characters `taaa`](.../../images/white-wolf/pwndbg.png)
+<Image
+  src={pwndbg}
+  alt='An image of the `pwndbg` interface. It shows a terminal screen and output from the tool. The commands run are cyclic, which provides a set of letters to use as input, and run, which runs the penance-rig binary. The output tells us that we hit the EIP register with the characters `taaa`'
+/>
 
 This tool was excellent for finding out exactly what I needed to send to hit what I needed. It provided a set of easy to use tools that made it much easier to nail down exactly what I needed to exploit the overflow. The first thing I found out was that the number of characters I needed was 76 and not 72. I did this by taking the output from the screenshot above and then passing the string of letters that triggered the seg fault (`taaa`) into `cyclic -l taaa` and this tells us that the offset is at 76. I _think_ this is because what I explicitly needed for this challenge was to fill the `EIP` register.
 
@@ -156,7 +167,7 @@ Doesn't work.
 
 Now, I'm not sure of the exact reasoning as to why this doesn't do what I expected, but I am fairly certain it's down to however that prompt is encoded when I pass it in as plain text. It almost definitely doesn't line up exactly as expected and the memory address is almost definitely not parsed as a memory address.
 
-I drove myself insane trying to work out what caused this. I tried spinning up the local Dockerfile (which required me installing Docker again having only just uninstalled it that morning) and using that. This didn't actually help me get any closer to a solution but it did prove to me that the netcat solution needed something different to me piping the output from a python `print` statement into it. 
+I drove myself insane trying to work out what caused this. I tried spinning up the local Dockerfile (which required me installing Docker again having only just uninstalled it that morning) and using that. This didn't actually help me get any closer to a solution but it did prove to me that the netcat solution needed something different to me piping the output from a python `print` statement into it.
 
 I ended up going to the discord and asking if anyone could give me a hint and was rewarded with at least knowing that the solution I was pursuing was in roughly the right direction. Time to dig back in.
 
@@ -203,15 +214,11 @@ io.sendline(payload)
 io.interactive()
 ```
 
-
 I then ran the script and... success! We have a flag.
 
 ## Conclusion and Thanks
 
-
 What can we take away from this? First of all, spending time to understand what you're doing will save time in the long run. You can run around smashing `Ctrl-v` and pasting all sorts of scripts off the internet, but if you don't know what they're doing you're going to struggle with the challenges that require even a vague understanding of how the pieces work.
 Secondly, there are some really helpful people out there. People write blog posts that explain things simply and with just the right amount of detail. They create tools that strip away so much of the complexity involved in interacting with computers. And some people (a big thank you here to Setral in the Rekcah Publishing discord) respond to random discord messages without being remotely rude about my vagueness and inability to use DMs (I'll turn them back on when the British government no longer require me to dox myself to use them).
 
-I recommend taking time to read all the linked blog posts and 
-
-
+I recommend taking time to read all the linked blog posts and

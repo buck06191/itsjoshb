@@ -1,7 +1,8 @@
 ---
-import PageLayout from 'layout:PageLayout.astro';
+import PageLayout from '../layouts/PageLayout.astro';
 
-import { Item, CATEGORY, Category } from 'type:Category';
+import type { Item, Category } from '../types/Category';
+import { CATEGORY  } from '../types/Category';
 
 const data: Item[] = [
   {
