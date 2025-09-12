@@ -15,6 +15,7 @@ const { url = '#', title = 'Default title', tags = [] } = Astro.props;
       <a
         href={url}
         class="no-underline focus:underline after:absolute after:inset-0 after:content-[''] group-focus-within:focus:no-underline group-focus-within:focus:shadow-none group-focus-within:focus:outline-none"
+        data-astro-prefetch
         >{title}</a
       >
     </h3>

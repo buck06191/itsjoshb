@@ -1,18 +1,16 @@
 ---
 layout: ../../layouts/PostLayout.astro
-title: 'CTF: White Wolf (TFI Comics - Martina)'
+title: 'Martina - White Wolf (The Future Is ****** CTF)'
 description: A write-up of the Martina - White Wolf CTF challenge from "The Future Is ******" issue #2. I go through how I got to where I did and what I learnt along the way.
 tags: ['ctf', 'cybersecurity', 'tficomic']
 slug: martina-white-wolf
 pubDate: '12th september, 2025'
-image:
+image: '/assets/martina-issue-2.webp'
 ---
 
-import { Image } from "astro:assets";
-import errorMessage from '../../images/white-wolf/buffer-seg-fault-error.png'
+import { Image } from 'astro:assets';
+import errorMessage from '../../images/white-wolf/buffer-seg-fault-error.png';
 import pwndbg from '../../images/white-wolf/pwndbg.png';
- 
-# White Wolf
 
 ## Introduction
 
@@ -51,7 +49,6 @@ Okay, so what we basically need to know is that the program we're running is ask
   src={errorMessage}
   alt='Output from running `penance-rig`. The command line interface takes input, into which the letter A has been entered dozens of times. The program then says that the user is not authorised to perform that function before then showing a `segmentation fault` error.'
 />
-"
 
 Digging through the above blog posts tells us that the way to exploit this is to find out the exact point at which the overflow starts and to then instead write the memory location of what we want to run/extract instead. There's more to it than this, and I'll get on to some of it as we go on, but that covers the general idea.
 
@@ -101,7 +98,7 @@ This was mentioned at various points in the Lightfoot Labs blog post but my brai
 
 With this in mind I put together a script using `pwntools` based on the `pwn template` command to let me input our memory address exactly where we needed it.
 
-```python3
+```python
 #!/usr/bin/env python3
 
 
@@ -173,7 +170,7 @@ I ended up going to the discord and asking if anyone could give me a hint and wa
 
 As I was sat scratching my head bald, I had a sudden though - surely `pwntools` works remotely. Surely the answer isn't to test things locally and then try copying and pasting over some random text in the hope it works. I found myself a [`pwntools` cheatsheet](https://corgi.rip/posts/pwntools-cheatsheet/#basic-io) and was rewarded with finding that there is in fact a `remote` command that can be used for a remote server. Taking my previous script and swapping out the `io = start()` command for one that uses `remote()` gave me the following:
 
-```python3
+```python
 python
 #!/usr/bin/env python3
 
