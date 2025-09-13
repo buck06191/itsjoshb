@@ -1,5 +1,6 @@
 ---
 import PageLayout from './PageLayout.astro'
+import { Image } from 'astro:assets';
 
 const {
   frontmatter: { title, pubDate, image }
@@ -13,14 +14,17 @@ const {
         <h1 class='text-2xl'>{title}</h1>
         {
           image && (
-            <img
-              height={360}
+            <Image
               src={image}
-              alt=''
-              class='w-half m-auto my-4'
+          alt=''
+          widths = {[240, 540, 720]}
+          layout="constrained"
+          width = "540"
+          height = "500"
+            class='my-4 m-auto'
             />
           )
-        }
+          }
         <small class='block'
           >Published on: {pubDate && <time>{pubDate}</time>}</small
         >
